@@ -39,14 +39,26 @@ extern "C" {
 #define realloc(x,y)  realloc_ld(x,y,__FILE__,__LINE__)
 #define free(x)       free_ld(x,__FILE__,__LINE__)
 
-void* malloc_ld(unsigned int size,const char* file, int line);
-void* calloc_ld(unsigned int size,unsigned int num,const char* file, int line);
+void* malloc_ld(size_t size, const char* file, int line);
+void* calloc_ld(size_t size, unsigned int num,const char* file, int line);
 void* realloc_ld(void *ptr, unsigned int size,const char* file, int line);
-void  free_ld(void *ptr,const char* file, int line);
+void  free_ld(void *ptr, const char* file, int line);
 
 void ld_dump();
 #endif
 
 #if defined __cplusplus
 }
+
+
+#ifndef MEMGRIDCPP_IMP
+void * operator new (size_t size, const char * file, int line);
+void * operator new[] (size_t size, const char * file, int line);
+void operator delete (void * p, char const * file, int line);
+#define new new(__FILE__, __LINE__)
+
 #endif
+
+#endif
+
+

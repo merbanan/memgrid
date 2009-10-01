@@ -36,18 +36,21 @@ typedef struct ld_member {
 	void*           memptr;
 	const char*     file;
 	int             line;
+	int				age;
 	int             post_marker;
 } ld_member;
 
 
 /* Hash table size and definition */
 
-#define LD_ENTRY_SIZE 10007
+#define LD_ENTRY_SIZE 100007
 ld_member ld_tab[LD_ENTRY_SIZE];
 
 unsigned int ld_members = 0;
 unsigned int ld_errors  = 0;
 unsigned int ld_np_free = 0;
+unsigned int ld_mallocs = 0;
+unsigned int ld_frees = 0;
 /* ld_tab[] members points to last entry while chained members points to previous in chain*/
 
 void insert_ld(const char* file, int line, unsigned int size, void* ptr) {
@@ -56,6 +59,7 @@ void insert_ld(const char* file, int line, unsigned int size, void* ptr) {
 	ld_member*      parent;
 
 	ld_members++;
+	ld_mallocs++;
 	hash_idx = (unsigned long)ptr % LD_ENTRY_SIZE;
 	member = &ld_tab[hash_idx];
 	parent = member;
@@ -67,6 +71,7 @@ void insert_ld(const char* file, int line, unsigned int size, void* ptr) {
 		member->memptr     = ptr;
 		member->file       = file;
 		member->member_ptr = parent;
+		member->age        = 0;
 		member->pre_marker = 0xECECECEC;
 		member->post_marker= 0xFAFAFAFA;
 	} else {
@@ -75,6 +80,7 @@ void insert_ld(const char* file, int line, unsigned int size, void* ptr) {
 		member->line       = line;
 		member->memptr     = ptr;
 		member->file       = file;
+		member->age        = 0;
 		member->pre_marker = 0xECECECEC;
 		member->post_marker= 0xFAFAFAFA;
 		member->member_ptr = parent->member_ptr;
@@ -85,47 +91,49 @@ void insert_ld(const char* file, int line, unsigned int size, void* ptr) {
 void remove_ld(const char* file, int line,void* ptr) {
 	unsigned int    hash_idx;
 	ld_member*      member;
-		ld_member*      parent;
-		ld_member*      previous;
+	ld_member*      parent;
+	ld_member*      previous;
 
-		hash_idx = (unsigned long)ptr % LD_ENTRY_SIZE;
-		member = &ld_tab[hash_idx];
-		parent = member;
+	ld_frees++;
 
-		if (!ptr) {
-		    ld_np_free++;
-		    return;
-		}
+	hash_idx = (unsigned long)ptr % LD_ENTRY_SIZE;
+	member = &ld_tab[hash_idx];
+	parent = member;
 
-		if (member->member_ptr == NULL) {
-		    ld_errors++;
-		    return;
-		}
-		if (member->member_ptr == parent) {
-		    ld_members--;
-		    memset(member,0,sizeof(ld_member));
-		    return;
-		} else if (member->memptr == ptr) {
-		    ld_members--;
-		    previous = member->member_ptr;
-		    memcpy(member,member->member_ptr,sizeof(ld_member));
-		    free(previous);
-		    return;
-		} else {
-		    previous = parent;
-		    member  = parent->member_ptr;
-		    while (member != parent) {
-		        if(ptr == member->memptr) {
-		            previous->member_ptr = member->member_ptr;
-		            free(member);
-		            ld_members--;
-		            return;
-		        }
-	        previous = member;
-	        member = member->member_ptr;
-		    }
-		}
-		ld_errors++;
+	if (!ptr) {
+	    ld_np_free++;
+	    return;
+	}
+
+	if (member->member_ptr == NULL) {
+	    ld_errors++;
+	    return;
+	}
+	if (member->member_ptr == parent) {
+	    ld_members--;
+	    memset(member,0,sizeof(ld_member));
+	    return;
+	} else if (member->memptr == ptr) {
+	    ld_members--;
+	    previous = member->member_ptr;
+	    memcpy(member,member->member_ptr,sizeof(ld_member));
+	    free(previous);
+	    return;
+	} else {
+	    previous = parent;
+	    member  = parent->member_ptr;
+	    while (member != parent) {
+	        if(ptr == member->memptr) {
+	            previous->member_ptr = member->member_ptr;
+	            free(member);
+	            ld_members--;
+	            return;
+	        }
+        previous = member;
+        member = member->member_ptr;
+	    }
+	}
+	ld_errors++;
 }
 
 void *malloc_ld(unsigned int size, const char* file, int line)
@@ -186,7 +194,7 @@ void ld_check() {
 
 
 void ld_dump() {
-	int i,allocation_count=0;
+	unsigned int i, allocation_count=0, currently_used=0;
 	ld_member* member;
 	ld_member* parent;
 	FILE *dfp;
@@ -203,20 +211,29 @@ void ld_dump() {
 			if ((member->pre_marker != 0xECECECEC) && (member->post_marker != 0xFAFAFAFA)) {
 				fprintf(dfp,"Hash table got corrupted! Aborting!\n");
 				fclose(dfp);
+				__asm int 3;
 			}
-	        fprintf(dfp,"%s\t%d\t0x%x\t%d\n", member->file, member->line, member->memptr, member->size);
+	        fprintf(dfp,"%s\t%d\t%d\t0x%x\t%d\n", member->file, member->age, member->line, member->memptr, member->size);
+			member->age++;
+			currently_used += member->size;
 	        while (member->member_ptr != parent){
 	            allocation_count++;
 				if ((member->pre_marker != 0xECECECEC) && (member->post_marker != 0xFAFAFAFA)) {
 					fprintf(dfp,"Hash table got corrupted! Aborting!\n");
 					fclose(dfp);
+					__asm int 3;
 				}
-	            fprintf(dfp,"%s\t%d\t0x%x\t%d\n", member->file, member->line, member->memptr, member->size);
+	            fprintf(dfp,"%s\t%d\t%d\t0x%x\t%d\n", member->file, member->age, member->line, member->memptr, member->size);
+				member->age++;
+				currently_used += member->size;
 	            member=member->member_ptr;
 	        }
 	    }
 	}
 	fprintf(dfp,"Total allocation count = %d\n",allocation_count);
+	fprintf(dfp,"Total count of mallocs = %d\n",ld_mallocs);
+	fprintf(dfp,"Total count of frees = %d\n",ld_frees);
+	fprintf(dfp,"Total currently used memory = %d\n",currently_used);
 	fclose(dfp);
 }
 
@@ -230,3 +247,9 @@ void ld_summary() {
 	ld_member* parent;
 }
 */
+
+
+#if defined __cplusplus
+
+
+#endif
