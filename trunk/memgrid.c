@@ -43,6 +43,8 @@ typedef struct ld_member {
 
 /* Hash table size and definition */
 
+// 1000003
+// 5000011
 #define LD_ENTRY_SIZE 100007
 ld_member ld_tab[LD_ENTRY_SIZE];
 
@@ -140,7 +142,7 @@ void *malloc_ld(unsigned int size, const char* file, int line)
 {
 	void* ret;
 	ret = malloc(size);
-	insert_ld(file, line, size, ret);
+	if (ret) insert_ld(file, line, size, ret);
 	return ret;
 }
 
@@ -148,7 +150,7 @@ void *calloc_ld(unsigned int num, unsigned int size, const char* file, int line)
 {
 	void* ret;
 	ret = calloc(num, size);
-	insert_ld(file, line, num*size, ret);
+	if (ret) insert_ld(file, line, num * size, ret);
 	return ret;
 }
 
@@ -161,10 +163,17 @@ void free_ld(void *ptr, const char* file, int line)
 void *realloc_ld(void *ptr, unsigned int size, const char* file, int line)
 {
 	void* ret;
-	if (ptr)
-	    remove_ld(file,line,ptr);
+	if (ptr) remove_ld(file, line, ptr);
 	ret = realloc(ptr,size);
-	insert_ld(file,line,size,ret);
+	if (ret) insert_ld(file, line, size, ret);
+	return ret;
+}
+
+char *strdup_ld(const char *str, const char *file, int line)
+{
+	char *ret;
+	ret = strdup(str);
+	if (ret) insert_ld(file, line, strlen(ret) + 1, ret);
 	return ret;
 }
 
@@ -195,14 +204,18 @@ void ld_check() {
 
 void ld_dump() {
 	unsigned int i, allocation_count=0, currently_used=0;
+	static int dump_count=0;
+	char filename[32];
 	ld_member* member;
 	ld_member* parent;
 	FILE *dfp;
-
-	dfp = fopen("dumpfile.txt", "w");
+	
+	sprintf(filename, "memgrid-dump-%d.txt", dump_count++);
+	dfp = fopen(filename, "w");
 	fprintf(dfp,"ld_members = %d, ld_errors = %d, ld_np_free = %d\n\n",ld_members,ld_errors,ld_np_free);
 
 	fprintf(dfp,"Current allocation table:\n");
+	fprintf(dfp,"Source\tAge\tLocation\tSize\n");
 	for (i=0 ; i<LD_ENTRY_SIZE ; i++) {
 	    member = &ld_tab[i];
 	    parent = member;
@@ -213,7 +226,7 @@ void ld_dump() {
 				fclose(dfp);
 				__asm int 3;
 			}
-	        fprintf(dfp,"%s\t%d\t%d\t0x%x\t%d\n", member->file, member->age, member->line, member->memptr, member->size);
+	        fprintf(dfp,"%s:%d\t%d\t0x%x\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
 			member->age++;
 			currently_used += member->size;
 	        while (member->member_ptr != parent){
@@ -223,7 +236,7 @@ void ld_dump() {
 					fclose(dfp);
 					__asm int 3;
 				}
-	            fprintf(dfp,"%s\t%d\t%d\t0x%x\t%d\n", member->file, member->age, member->line, member->memptr, member->size);
+	            fprintf(dfp,"%s:%d\t%d\t0x%x\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
 				member->age++;
 				currently_used += member->size;
 	            member=member->member_ptr;
