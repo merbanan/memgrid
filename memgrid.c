@@ -226,7 +226,7 @@ void ld_dump() {
 				fclose(dfp);
 				__asm int 3;
 			}
-	        fprintf(dfp,"%s:%d\t%d\t0x%x\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
+	        fprintf(dfp, "%s:%d\t%d\t0x%p\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
 			member->age++;
 			currently_used += member->size;
 	        while (member->member_ptr != parent){
@@ -236,7 +236,7 @@ void ld_dump() {
 					fclose(dfp);
 					__asm int 3;
 				}
-	            fprintf(dfp,"%s:%d\t%d\t0x%x\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
+	            fprintf(dfp, "%s:%d\t%d\t0x%p\t%d\n", member->file, member->line, member->age, member->memptr, member->size);
 				member->age++;
 				currently_used += member->size;
 	            member=member->member_ptr;
