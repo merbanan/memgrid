@@ -27,24 +27,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define MG_MEMORY_LEAK_DETECTOR
 
-
 #if defined __cplusplus
 extern "C" {
 #endif
 
-
 #ifdef MG_MEMORY_LEAK_DETECTOR
-#define malloc(x)     malloc_ld((x),__FILE__,__LINE__)
-#define calloc(x,y)   calloc_ld((x),(y),__FILE__,__LINE__)
-#define realloc(x,y)  realloc_ld((x),(y),__FILE__,__LINE__)
-#define free(x)       free_ld((x),__FILE__,__LINE__)
-#define strdup(s)     strdup_ld((s),__FILE__,__LINE__)
+#define malloc(x)     malloc_ld((x), __FILE__, __LINE__)
+#define calloc(x,y)   calloc_ld((x), (y), __FILE__, __LINE__)
+#define realloc(x,y)  realloc_ld((x), (y), __FILE__, __LINE__)
+#define free(x)       free_ld((x), __FILE__, __LINE__)
+#define strdup(s)     strdup_ld((s), __FILE__, __LINE__)
 
-void* malloc_ld(size_t size, const char* file, int line);
-void* calloc_ld(size_t size, unsigned int num,const char* file, int line);
-void* realloc_ld(void *ptr, unsigned int size,const char* file, int line);
-void  free_ld(void *ptr, const char* file, int line);
-char* strdup_ld(const char *str, const char *file, int line);
+void *malloc_ld(size_t size, const char *file, int line);
+void *calloc_ld(size_t size, unsigned int num, const char *file, int line);
+void *realloc_ld(void *ptr, unsigned int size, const char *file, int line);
+void  free_ld(void *ptr, const char *file, int line);
+char *strdup_ld(const char *str, const char *file, int line);
 
 void ld_dump();
 #endif
@@ -52,16 +50,11 @@ void ld_dump();
 #if defined __cplusplus
 }
 
-
 #ifndef MEMGRIDCPP_IMP
-void * operator new (size_t size, const char * file, int line);
-void * operator new[] (size_t size, const char * file, int line);
-void operator delete (void * p, char const * file, int line);
+void *operator new (size_t size, const char *file, int line);
+void *operator new[] (size_t size, const char *file, int line);
+void operator delete (void *p, char const *file, int line);
 #define new new(__FILE__, __LINE__)
-
 #endif
 
 #endif
-
-
-
