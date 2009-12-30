@@ -47,17 +47,17 @@ typedef struct ld_member {
 // 1000003
 // 5000011
 #define LD_ENTRY_SIZE 100007
-ld_member ld_tab[LD_ENTRY_SIZE];
+static ld_member ld_tab[LD_ENTRY_SIZE];
 
-unsigned int ld_members = 0;
-unsigned int ld_errors  = 0;
-unsigned int ld_np_free = 0;
-unsigned int ld_mallocs = 0;
-unsigned int ld_frees = 0;
+static unsigned int ld_members = 0;
+static unsigned int ld_errors  = 0;
+static unsigned int ld_np_free = 0;
+static unsigned int ld_mallocs = 0;
+static unsigned int ld_frees = 0;
 
 /* ld_tab[] members points to last entry while chained members points to previous in chain */
 
-void insert_ld(const char *file, int line, unsigned int size, void *ptr) {
+static void insert_ld(const char *file, int line, unsigned int size, void *ptr) {
 	unsigned int  hash_idx;
 	ld_member    *member;
 	ld_member    *parent;
@@ -92,7 +92,7 @@ void insert_ld(const char *file, int line, unsigned int size, void *ptr) {
 	}
 }
 
-void remove_ld(const char *file, int line, void *ptr) {
+static void remove_ld(const char *file, int line, void *ptr) {
 	unsigned int  hash_idx;
 	ld_member    *member;
 	ld_member    *parent;
