@@ -1,0 +1,1 @@
+Tiny wrapper for tracking memory allocations in C. Useful for finding memory leaks.
